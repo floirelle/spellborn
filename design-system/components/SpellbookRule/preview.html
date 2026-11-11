@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../components.css"><title>Spellbook rule</title></head>
+<body>
+<div style="padding:var(--space-4)">
+<div class="sb-book" role="list" aria-label="Sample healer spellbook at moment 14">
+  <div class="sb-rule sb-rule--skipped" role="listitem"><span class="sb-rule__n">1</span><span class="sb-rule__code"><span class="kw">if</span> ally_down(): <span class="sp-mend">last_rite</span>(fallen_ally)</span><span class="sb-rule__state">false</span></div>
+  <div class="sb-rule sb-rule--fired" role="listitem"><span class="sb-rule__n"><span class="sb-tab">2</span></span><span class="sb-rule__code"><span class="kw">if</span> weakest_ally.hp_pct &lt; 60: <span class="sp-mend">heal</span>(weakest_ally)</span><span class="sb-rule__state">fired</span></div>
+  <div class="sb-rule" role="listitem"><span class="sb-rule__n">3</span><span class="sb-rule__code"><span class="kw">if</span> ready("mend") <span class="kw">and</span> allies_hurt() &gt; 1: <span class="sp-mend">mend</span>()</span><span class="sb-rule__state"></span></div>
+  <div class="sb-rule sb-rule--fizzled" role="listitem"><span class="sb-rule__n">4</span><span class="sb-rule__code"><span class="sp-harm">fire_nova</span>()</span><span class="sb-rule__state">fizzled</span></div>
+  <div class="sb-rule sb-rule--error" role="listitem"><span class="sb-rule__n">5</span><span class="sb-rule__code"><span class="kw">if</span> enemy.charging <span class="sp-guard">taunt</span>()</span><span class="sb-rule__state">error</span><span class="sb-rule__msg">Line 5 needs a colon after the condition: if enemy.charging: taunt()</span></div>
+  <div class="sb-rule" role="listitem"><span class="sb-rule__n">6</span><span class="sb-rule__code">attack(nearest_enemy)</span><span class="sb-rule__state"></span></div>
+</div>
+</div>
+</body>
+</html>

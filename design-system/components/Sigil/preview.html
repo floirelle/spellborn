@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../components.css"><title>Sigil</title></head>
+<body>
+<div class="sb-stack">
+  <div class="sb-row" style="padding:0" aria-label="Sample rule: when weakest ally is below 60 percent HP, cast heal on weakest ally">
+    <button class="sb-sigil sb-sigil--when" type="button"><span class="sb-sigil__kw">when</span> weakest_ally.hp_pct &lt; <b>60</b></button>
+    <button class="sb-sigil sb-sigil--mend" type="button"><span class="sb-sigil__kw">cast</span> <b>heal</b></button>
+    <button class="sb-sigil" type="button"><span class="sb-sigil__kw">on</span> weakest_ally</button>
+  </div>
+  <div class="sb-row" style="padding:0" aria-label="More sample sigils">
+    <button class="sb-sigil sb-sigil--harm" type="button"><b>fire_nova</b></button>
+    <button class="sb-sigil sb-sigil--guard" type="button"><b>taunt</b></button>
+    <button class="sb-sigil" type="button"><b>attack</b></button>
+    <button class="sb-sigil sb-sigil--when" type="button"><span class="sb-sigil__kw">when</span> enemy.charging</button>
+  </div>
+</div>
+</body>
+</html>

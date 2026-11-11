@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../components.css">
+<title>Unit tile</title>
+<style>.sb-unit__sprite { background-image: url("../../../assets/sprites/units.png"); }</style></head>
+<body>
+<main style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:var(--space-2);padding:var(--space-4)">
+  <button type="button" class="sb-unit sb-unit--selected" aria-pressed="true" aria-label="Healer, 90 of 90 HP, acting now">
+    <span class="sb-unit__sprite" style="--x:0" aria-hidden="true"></span>
+    <span class="sb-unit__info"><span class="sb-unit__top"><span class="sb-unit__name">Healer</span><span class="sb-tab">line 2</span></span>
+      <span class="sb-meter" aria-hidden="true"><span class="sb-meter__track"><span class="sb-meter__fill" style="width:100%;display:block"></span></span><span class="sb-meter__value">90 / 90</span></span>
+      <span class="sb-unit__badges"></span></span>
+  </button>
+  <button type="button" class="sb-unit" aria-pressed="false" aria-label="Tank, 31 of 150 HP">
+    <span class="sb-unit__sprite" style="--x:1" aria-hidden="true"></span><span class="sb-unit__impact sb-unit__impact--harm" aria-hidden="true">−34</span>
+    <span class="sb-unit__info"><span class="sb-unit__top"><span class="sb-unit__name">Tank</span></span>
+      <span class="sb-meter sb-meter--low" aria-hidden="true"><span class="sb-meter__track"><span class="sb-meter__fill" style="width:21%;display:block"></span></span><span class="sb-meter__value">31 / 150</span></span>
+      <span class="sb-unit__badges"><span class="sb-badge sb-badge--guard">Taunting</span><span class="sb-badge sb-badge--harm">Burning, 2</span></span></span>
+  </button>
+  <button type="button" class="sb-unit sb-unit--down" aria-pressed="false" aria-label="Ogre, fallen">
+    <span class="sb-unit__sprite" style="--x:3" aria-hidden="true"></span>
+    <span class="sb-unit__info"><span class="sb-unit__top"><span class="sb-unit__name">Ogre</span></span>
+      <span class="sb-meter" aria-hidden="true"><span class="sb-meter__track"><span class="sb-meter__fill" style="width:0%;display:block"></span></span><span class="sb-meter__value">0 / 70</span></span>
+      <span class="sb-unit__badges"><span class="sb-badge sb-badge--plain">Fallen</span></span></span>
+  </button>
+  <button type="button" class="sb-unit sb-unit--compact" aria-pressed="false" aria-label="Brute, 130 of 130 HP, charging">
+    <span class="sb-unit__sprite" style="--x:4" aria-hidden="true"></span>
+    <span class="sb-unit__info"><span class="sb-unit__top"><span class="sb-unit__name">Brute</span></span>
+      <span class="sb-meter" aria-hidden="true"><span class="sb-meter__track"><span class="sb-meter__fill" style="width:100%;display:block"></span></span><span class="sb-meter__value">130 / 130</span></span>
+      <span class="sb-unit__badges"><span class="sb-badge sb-badge--harm">Charging</span></span></span>
+  </button>
+</main>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../components.css"><title>Replay log</title></head>
+<body>
+<div class="sb-stack">
+<div class="sb-log" role="log" aria-label="Sample replay log">
+  <div class="sb-log__entry"><span class="sb-log__t">t12</span><span class="sb-log__who">Tank</span><span class="sb-log__what">taunt() <span class="rule">· line 1</span></span><span class="sb-log__out out-guard">guarding</span></div>
+  <div class="sb-log__entry sb-log__entry--foe"><span class="sb-log__t">t13</span><span class="sb-log__who">Enemy</span><span class="sb-log__what">strike(tank) <span class="rule">· line 3</span></span><span class="sb-log__out out-harm">−34</span></div>
+  <div class="sb-log__entry sb-log__entry--current"><span class="sb-log__t"><span class="sb-tab">t14</span></span><span class="sb-log__who">Healer</span><span class="sb-log__what">heal(tank) <span class="rule">· line 2</span></span><span class="sb-log__out out-mend">+22</span></div>
+  <div class="sb-log__entry sb-log__entry--fizzled"><span class="sb-log__t">t14</span><span class="sb-log__who">Mage</span><span class="sb-log__what">fire_nova() <span class="rule">· line 4</span></span><span class="sb-log__out out-fizzle">fizzled: 1 burning, needs 3</span></div>
+</div>
+<div class="sb-log" role="log" aria-label="Empty replay log"><p class="sb-log__status" style="margin:0">No fight yet. Press <b>Run fight</b> and every action will appear here, linked to its line.</p></div>
+<div class="sb-log" role="log" aria-label="Replay log while running" aria-busy="true"><p class="sb-log__status" style="margin:0">Running the fight: moment <b>42</b>…</p></div>
+<div class="sb-log" role="log" aria-label="Replay log error"><p class="sb-log__status sb-log__status--error" style="margin:0">The fight could not start. Line 5 of the healer's spellbook has an error; fix it and run again.</p></div>
+</div>
+</body>
+</html>

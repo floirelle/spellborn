@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spellborn fight screen</title>
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="../design-system/components.css">
+<!--
+  Design read: the fight screen of a programming-puzzle party RPG, for players who enjoy writing logic,
+  in the "grimoire you program" language of design-system/. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
+  Focal point: whatever the gilt marks (Run fight in setup, the line being checked in a replay).
+  Layout: Spells (left) / battlefield (middle) / Spellbook editor or replay (right); tabs below 1200px.
+-->
+<style>
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; min-height: 100%; }
+  h1, h2, h3, p { margin: 0; }
+  :focus-visible { outline: 2px solid transparent; box-shadow: var(--focus-ring); }
+
+  /* App bar */
+  .app-bar { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; padding-block: var(--space-3); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--surface); }
+  .wordmark { font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 28px; color: var(--gilt); }
+  .encounter { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; min-width: 0; flex: 1; }
+  .encounter h1 { font-family: var(--font-display); font-size: 28px; line-height: 32px; font-weight: 700; }
+  .phase { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .phase b { color: var(--ink); }
+
+  /* Layout */
+  button, input { -webkit-tap-highlight-color: transparent; }
+  .layout { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(200px, 260px) minmax(480px, 1fr) minmax(360px, 560px); }
+  .panel { min-width: 0; min-height: 0; overflow-y: auto; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-4); }
+  #panel-spells { border-right: 1px solid var(--line); background: var(--surface); }
+  #panel-book { border-left: 1px solid var(--line); background: var(--surface); }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+  .panel-head h2 { font-family: var(--font-display); font-size: 24px; line-height: 28px; font-weight: 600; }
+  .panel-sub { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .phone-tabs { display: none; }
+  .phone-only { display: none; }
+
+  /* Spells panel */
+  .lib { display: flex; flex-direction: column; gap: var(--space-2); }
+  .lib h3 { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--ink-muted); }
+  .lib-item { font: inherit; text-align: left; display: flex; flex-direction: column; gap: 2px; min-height: 44px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface-sunk); color: var(--ink); }
+  button.lib-item { border-color: var(--line-strong); }
+  button.lib-item:hover { border-color: var(--ink); }
+  button.lib-item:active { transform: translateY(1px); }
+  .lib-item code { font-family: var(--font-code); font-size: 13px; line-height: 18px; font-weight: 600; }
+  .lib-item .desc { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .lib-item .req { font-size: 13px; line-height: 18px; color: var(--ink); }
+  .lib-item .ins { font-size: 12px; line-height: 16px; color: var(--ink-muted); text-decoration: underline; text-underline-offset: 2px; }
+
+  /* Battlefield */
+  .battle-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; }
+  .battle-head h2 { font-family: var(--font-display); font-size: 24px; line-height: 28px; font-weight: 600; }
+  .battle-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+  .result { font-family: var(--font-display); font-size: 24px; line-height: 28px; font-weight: 700; }
+  .result.win { color: var(--mend); }
+  .result.loss, .result.timeout { color: var(--harm); }
+  .field { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .side { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .side h3 { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--ink-muted); }
+  .sb-unit__sprite { background-image: url("../assets/sprites/units.png"); }
+
+  /* Transport */
+  .transport { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--surface); }
+  .transport-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+  .transport label { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .transport label b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  #scrub { width: 100%; accent-color: var(--gilt); min-height: 44px; cursor: pointer; }
+  .log-wrap { display: flex; flex-direction: column; gap: var(--space-2); min-height: 0; }
+  .log-wrap h3 { font-size: 13px; line-height: 18px; font-weight: 700; color: var(--ink-muted); }
+  .sb-log { max-height: 320px; overflow-y: auto; position: relative; }
+  .sb-log__entry--tick .sb-log__what { color: var(--ink-muted); }
+
+  /* Spellbook panel */
+  .hero-tabs { display: flex; gap: var(--space-2); overflow-x: auto; padding-bottom: 2px; }
+  .seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius-md); overflow: hidden; }
+  .seg button { font: inherit; font-size: 14px; font-weight: 700; min-height: 44px; padding: 0 var(--space-3); border: 0; background: transparent; color: var(--ink-muted); }
+  .seg button + button { border-left: 1px solid var(--line-strong); }
+  .seg button:hover { color: var(--ink); }
+  .seg button[aria-pressed="true"] { background: var(--gilt-soft); color: var(--ink); }
+  .seg button:focus-visible { position: relative; }
+  .tab-btn { font: inherit; font-size: 14px; font-weight: 700; min-height: 44px; padding: 0 var(--space-3); border-radius: var(--radius-md); border: 1px solid var(--line-strong); background: transparent; color: var(--ink-muted); white-space: nowrap; }
+  .tab-btn:hover { color: var(--ink); border-color: var(--ink); }
+  .tab-btn[aria-pressed="true"] { color: var(--ink); border-color: var(--gilt); background: var(--gilt-soft); }
+  .tab-btn .err { color: var(--harm); }
+  .toolbar { display: flex; gap: var(--space-3); align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .toolbar .sb-meter { flex: 1; min-width: 180px; grid-template-columns: 4em 1fr auto; }
+  .sb-meter--over .sb-meter__fill { background: var(--harm); }
+  .sb-meter--over .sb-meter__value { color: var(--harm); }
+  .editor-label { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .editor { display: grid; grid-template-columns: 2.5em minmax(0, 1fr); background: var(--surface-sunk); border: 1px solid var(--line-strong); border-radius: var(--radius-md); overflow: hidden; }
+  .editor:focus-within { box-shadow: var(--focus-ring); }
+  .gutter { padding: var(--space-2) 0; font-family: var(--font-code); font-size: 12px; line-height: 24px; color: var(--ink-muted); text-align: right; padding-right: var(--space-2); user-select: none; overflow: hidden; font-variant-numeric: tabular-nums; }
+  .gutter span { display: block; height: 24px; }
+  .gutter .bad { color: var(--harm); font-weight: 700; }
+  #code { font-family: var(--font-code); font-size: 14px; line-height: 24px; padding: var(--space-2) var(--space-3); border: 0; background: transparent; color: var(--ink); resize: vertical; min-height: 216px; white-space: pre; overflow-x: auto; outline: none; tab-size: 2; }
+  .errors { display: flex; flex-direction: column; gap: var(--space-1); padding: 0; margin: 0; list-style: none; }
+  .errors li { font-size: 13px; line-height: 18px; color: var(--harm); }
+  .note { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .sigil-rows { display: flex; flex-direction: column; gap: var(--space-2); background: var(--surface-sunk); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-3); }
+  .sigil-row { display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+  .sigil-row .n { font-family: var(--font-code); font-size: 12px; color: var(--ink-muted); width: 2em; text-align: right; }
+  .sb-sigil.static { cursor: default; }
+  .sb-sigil.static:hover, .sb-sigil.static:active { border-color: var(--line-strong); box-shadow: none; }
+  .sb-sigil--when.static:hover { border-style: dashed; }
+  .banner { padding: var(--space-3); border: 1px solid var(--harm); border-radius: var(--radius-md); color: var(--ink); font-size: 14px; line-height: 20px; }
+  .banner b { color: var(--harm); }
+  .replay-head { display: flex; flex-direction: column; gap: var(--space-2); }
+  .replay-head .who { font-family: var(--font-display); font-size: 20px; line-height: 24px; font-weight: 600; }
+  .sb-book { white-space: normal; }
+  .trace { grid-column: 2 / -1; font-family: var(--font-code); font-size: 12px; line-height: 18px; color: var(--ink-muted); white-space: normal; padding-bottom: var(--space-1); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: baseline; text-decoration: none; }
+  .res { font-family: var(--font-text); font-size: 12px; font-weight: 700; padding: 0 var(--space-1); border-radius: var(--radius-sm); border: 1px solid currentColor; }
+  .res-true { color: var(--ink); }
+  .res-false { color: var(--ink-muted); }
+  .trace .out-harm, .trace .out-mend, .trace .out-guard, .trace .out-fizzle, .trace .out-plain { font-weight: 600; }
+  .trace .out-plain { color: var(--ink); }
+  .waiting { font-size: 14px; line-height: 20px; color: var(--ink-muted); }
+
+  footer { padding-block: var(--space-2); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border-top: 1px solid var(--line); font-size: 12px; line-height: 18px; color: var(--ink-muted); }
+  footer a { color: var(--ink-muted); }
+  footer a:hover { color: var(--ink); }
+
+  [data-phase="setup"] .replay-only { display: none !important; }
+  [data-phase="replay"] .setup-only { display: none !important; }
+
+  /* Phone and narrow tablets: one panel at a time */
+  @media (max-width: 1199px) {
+    html, body { height: auto; }
+    .layout { display: flex; flex-direction: column; flex: none; }
+    .panel { flex: none; overflow: visible; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); border: 0 !important; }
+    #panel-battle { order: -1; }
+    .phone-tabs { display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; gap: var(--space-2); padding-block: var(--space-2); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); background: var(--ground); border-bottom: 1px solid var(--line); }
+    .phone-tabs .tab-btn { flex: 1; }
+    .phone-only { display: block; }
+    body:not([data-tab="spells"]) #panel-spells { display: none; }
+    body:not([data-tab="book"]) #panel-book { display: none; }
+    body[data-phase="setup"]:not([data-tab="battle"]) #panel-battle { display: none; }
+    /* During a replay the battlefield stays on top as a compact strip on every tab */
+    body[data-phase="replay"]:not([data-tab="battle"]) #panel-battle .log-wrap { display: none; }
+    body[data-phase="replay"]:not([data-tab="battle"]) #panel-battle { padding-bottom: 0; }
+    body[data-phase="replay"]:not([data-tab="battle"]) .sb-unit__badges { display: none; }
+  }
+  @media (max-width: 520px) {
+    .field { gap: var(--space-2); }
+    .encounter h1 { font-size: 24px; line-height: 28px; }
+  }
+</style>
+</head>
+<body data-phase="setup" data-tab="book">
+<header class="app-bar">
+  <span class="wordmark">Spellborn</span>
+  <div class="encounter">
+    <h1>Ogre camp</h1>
+    <p class="phase"><b id="phase-label">Setup</b> · sample encounter</p>
+  </div>
+  <button class="sb-btn sb-btn--ghost" type="button" id="theme-btn">Light theme</button>
+</header>
+
+<nav class="phone-tabs" aria-label="Panels">
+  <button class="tab-btn" type="button" data-tab="spells" aria-pressed="false">Spells</button>
+  <button class="tab-btn" type="button" data-tab="battle" aria-pressed="false">Battle</button>
+  <button class="tab-btn" type="button" data-tab="book" aria-pressed="true">Spellbook</button>
+</nav>
+
+<main class="layout">
+  <section class="panel" id="panel-spells" aria-labelledby="spells-title">
+    <div class="panel-head">
+      <h2 id="spells-title">Spells</h2>
+      <span class="panel-sub" id="spells-who"></span>
+    </div>
+    <p class="note setup-only" id="spells-hint">Select a spell or condition to insert it into the spellbook at the cursor.</p>
+    <div class="lib" id="lib-spells"></div>
+    <div class="lib" id="lib-conds"></div>
+    <div class="lib" id="lib-targets"></div>
+  </section>
+
+  <section class="panel" id="panel-battle" aria-labelledby="battle-title">
+    <div class="battle-head">
+      <h2 id="battle-title">Battle</h2>
+      <div class="battle-actions">
+        <span class="result replay-only" id="result" aria-live="polite"></span>
+        <button class="sb-btn replay-only" type="button" id="edit-btn">Edit spellbooks</button>
+        <button class="sb-btn sb-btn--run setup-only" type="button" id="run-btn">Run fight <kbd>Ctrl+Enter</kbd></button>
+      </div>
+    </div>
+    <div class="field">
+      <div class="side"><h3>Party</h3><div class="side" id="side-hero"></div></div>
+      <div class="side"><h3>Enemies</h3><div class="side" id="side-foe"></div></div>
+    </div>
+    <div class="transport replay-only">
+      <div class="transport-row">
+        <button class="sb-btn" type="button" id="prev-btn">Previous step</button>
+        <button class="sb-btn" type="button" id="play-btn">Play</button>
+        <button class="sb-btn" type="button" id="next-btn">Next step</button>
+      </div>
+      <label for="scrub" id="scrub-label">Replay position</label>
+      <input type="range" id="scrub" min="0" max="0" value="0">
+    </div>
+    <div class="log-wrap">
+      <h3>Fight log</h3>
+      <div class="sb-log" role="log" aria-label="Fight log" id="log"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-book" aria-labelledby="book-title">
+    <div class="panel-head">
+      <h2 id="book-title">Spellbook</h2>
+      <div class="seg replay-only" role="group" aria-label="Which spellbook to follow">
+        <button type="button" id="follow-selected" aria-pressed="true">Selected unit</button>
+        <button type="button" id="follow-action" aria-pressed="false">Whoever acts</button>
+      </div>
+    </div>
+    <div class="hero-tabs" id="hero-tabs" role="group" aria-label="Choose a hero"></div>
+    <div class="phone-only setup-only"><button class="sb-btn sb-btn--run" type="button" id="run-btn-2">Run fight</button></div>
+    <div id="book-body"></div>
+  </section>
+</main>
+
+<footer>
+  Sample encounter: HP, damage, cooldowns and focus budgets are placeholder values. Sprites from
+  <a href="https://huggingface.co/datasets/Angais/pixel-art-atlas-1.4m" target="_blank" rel="noopener">pixel-art-atlas-1.4m</a> (CC0, AI-generated), placeholder art.
+</footer>
+
+<script>
+"use strict";
+/* ---------- Content (sample values, not balance) ---------- */
+const MINUS = "−";
+const MAX_T = 30;
+const BURN = 4;
+const SPELLS = {
+  attack:    { target: "enemy",  tone: "",      power: 8,  cd: 0, desc: "Hit one enemy for 8." },
+  heal:      { target: "ally",   tone: "mend",  power: 24, cd: 0, desc: "Restore 24 HP to one ally." },
+  mend:      { target: "none",   tone: "mend",  power: 12, cd: 3, desc: "Restore 12 HP to every living ally." },
+  last_rite: { target: "fallen", tone: "mend",  power: 30, cd: 0, desc: "Raise a fallen ally with 30 HP.", req: "Only works when an ally has fallen." },
+  taunt:     { target: "none",   tone: "guard", power: 0,  cd: 3, desc: "Enemies must hit you for the next 2 moments." },
+  shield:    { target: "ally",   tone: "guard", power: 20, cd: 2, desc: "Absorb the next 20 damage to one ally." },
+  firebolt:  { target: "enemy",  tone: "harm",  power: 12, cd: 0, desc: "Hit one enemy for 12 and set it burning for 3 moments (4 a moment)." },
+  fire_nova: { target: "none",   tone: "harm",  power: 18, cd: 3, desc: "Hit every enemy for 18.", req: "Only ignites when 2 or more enemies are burning." },
+  club:      { target: "enemy",  tone: "",      power: 7,  cd: 0, desc: "Hit one enemy for 7." },
+  charge:    { target: "none",   tone: "",      power: 0,  cd: 4, desc: "Wind up a smash for the next moment." },
+  smash:     { target: "enemy",  tone: "harm",  power: 30, cd: 0, desc: "Hit one enemy for 30.", req: "Only works right after a charge." },
+};
+const HEROES = [
+  { id: "healer", name: "Healer", sprite: 0, hp: 90, budget: 12, spells: ["heal", "mend", "last_rite", "attack"],
+    code: 'if ally_down(): last_rite(fallen_ally)\nif weakest_ally.hp_pct < 60: heal(weakest_ally)\nif ready("mend") and allies_hurt() > 1: mend()\nattack(nearest_enemy)' },
+  { id: "tank", name: "Tank", sprite: 1, hp: 150, budget: 10, spells: ["taunt", "shield", "attack"],
+    code: 'if enemy.charging and ready("taunt"): taunt()\nif ready("shield") and weakest_ally.hp_pct < 50: shield(weakest_ally)\nattack(nearest_enemy)' },
+  { id: "mage", name: "Mage", sprite: 2, hp: 75, budget: 10, spells: ["firebolt", "fire_nova", "attack"],
+    code: 'if enemies_burning() >= 2 and ready("fire_nova"): fire_nova()\nif not nearest_enemy.burning: firebolt(nearest_enemy)\nfire_nova()' },
+];
+const FOES = [
+  { id: "ogre_a", name: "Ogre A", sprite: 3, hp: 70, spells: ["club"], code: "club(weakest_enemy)" },
+  { id: "brute", name: "Brute", sprite: 4, hp: 130, spells: ["smash", "charge", "club"],
+    code: 'if self.charging: smash(weakest_enemy)\nif ready("charge"): charge()\nclub(nearest_enemy)' },
+  { id: "ogre_b", name: "Ogre B", sprite: 3, hp: 70, spells: ["club"], code: "club(weakest_enemy)" },
+];
+const CONDITIONS = [
+  ["weakest_ally.hp_pct", "HP percent of the ally with the lowest HP."],
+  ["allies_hurt()", "How many allies are below full HP."],
+  ["ally_down()", "True when an ally has fallen."],
+  ['ready("spell")', "True when that spell is off cooldown."],
+  ["enemy.charging", "True when an enemy is charging a big attack."],
+  ["enemies_burning()", "How many enemies are burning."],
+  ["nearest_enemy.burning", "True when the nearest enemy is burning."],
+  ["self.hp_pct", "Your own HP percent."],
+  ["moment()", "The current moment number."],
+];
+const TARGETS = [
+  ["self", "You."], ["weakest_ally", "The ally with the lowest HP percent."], ["fallen_ally", "The first ally who has fallen."],
+  ["nearest_enemy", "The first enemy in line."], ["weakest_enemy", "The enemy with the lowest HP percent."],
+];
+const NAMES = new Set(["self", "weakest_ally", "fallen_ally", "nearest_enemy", "weakest_enemy", "enemy"]);
+const FUNCS = { ally_down: 0, allies_hurt: 0, enemies_burning: 0, ready: 1, moment: 0 };
+const UNIT_PROPS = new Set(["hp", "hp_pct", "burning", "charging", "shielded", "taunting"]);
+const SIDE_PROPS = new Set(["charging", "count", "burning"]);
+const KEYWORDS = new Set(["if", "and", "or", "not", "true", "false"]);
+
+/* ---------- Tiny rule language ---------- */
+class RuleError extends Error {}
+function tokenize(src) {
+  const toks = []; let i = 0;
+  while (i < src.length) {
+    const c = src[i];
+    if (c === " " || c === "\t") { i++; continue; }
+    if (c === "#") break;
+    if (/[0-9]/.test(c)) { let j = i; while (j < src.length && /[0-9.]/.test(src[j])) j++; toks.push({ t: "num", v: parseFloat(src.slice(i, j)), s: i, e: j }); i = j; continue; }
+    if (c === '"' || c === "'") {
+      let j = i + 1; while (j < src.length && src[j] !== c) j++;
+      if (j >= src.length) throw new RuleError("a piece of text is missing its closing quote");
+      toks.push({ t: "str", v: src.slice(i + 1, j), s: i, e: j + 1 }); i = j + 1; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i; while (j < src.length && /[A-Za-z0-9_]/.test(src[j])) j++;
+      const w = src.slice(i, j); toks.push({ t: KEYWORDS.has(w) ? "kw" : "id", v: w, s: i, e: j }); i = j; continue;
+    }
+    const two = src.slice(i, i + 2);
+    if (["<=", ">=", "==", "!="].includes(two)) { toks.push({ t: "op", v: two, s: i, e: i + 2 }); i += 2; continue; }
+    if ("<>".includes(c)) { toks.push({ t: "op", v: c, s: i, e: i + 1 }); i++; continue; }
+    if ("().,:".includes(c)) { toks.push({ t: c, v: c, s: i, e: i + 1 }); i++; continue; }
+    throw new RuleError(`"${c}" is not part of the spell language`);
+  }
+  return toks;
+}
+function parseLine(text, unitDef) {
+  const toks = tokenize(text);
+  if (!toks.length) return null;
+  let p = 0;
+  const peek = () => toks[p];
+  const next = () => toks[p++];
+  const is = (t, v) => peek() && peek().t === t && (v === undefined || peek().v === v);
+  function primary() {
+    const tk = next();
+    if (!tk) throw new RuleError("the condition ends too early");
+    if (tk.t === "num") return { k: "num", v: tk.v };
+    if (tk.t === "str") return { k: "str", v: tk.v };
+    if (tk.t === "kw" && (tk.v === "true" || tk.v === "false")) return { k: "bool", v: tk.v === "true" };
+    if (tk.t === "(") { const e = expr(); if (!is(")")) throw new RuleError("a bracket is not closed"); next(); return e; }
+    if (tk.t !== "id") throw new RuleError(`"${tk.v}" can't start a condition`);
+    let node;
+    if (is("(")) {
+      if (!(tk.v in FUNCS)) throw new RuleError(`there is no condition called ${tk.v}(). Check the Spells panel for names`);
+      next(); const args = [];
+      if (!is(")")) { args.push(expr()); while (is(",")) { next(); args.push(expr()); } }
+      if (!is(")")) throw new RuleError(`${tk.v}( is missing its closing bracket`);
+      next();
+      if (args.length !== FUNCS[tk.v]) throw new RuleError(FUNCS[tk.v] ? `${tk.v} needs a spell name, for example ${tk.v}("mend")` : `${tk.v}() takes nothing inside the brackets`);
+      if (tk.v === "ready") {
+        if (args[0].k !== "str") throw new RuleError('ready needs a spell name in quotes, for example ready("mend")');
+        if (!unitDef.spells.includes(args[0].v)) throw new RuleError(`${unitDef.name} doesn't know ${args[0].v}, so ready("${args[0].v}") is never true`);
+      }
+      node = { k: "call", fn: tk.v, args };
+    } else {
+      if (!NAMES.has(tk.v)) throw new RuleError(`there is nothing called ${tk.v}. Check the Spells panel for names`);
+      node = { k: "name", id: tk.v };
+    }
+    if (is(".")) {
+      next(); const pr = next();
+      if (!pr || pr.t !== "id") throw new RuleError("a dot must be followed by a property, for example .hp_pct");
+      const okProps = node.k === "name" && node.id === "enemy" ? SIDE_PROPS : UNIT_PROPS;
+      if (!okProps.has(pr.v)) throw new RuleError(`${pr.v} is not something you can read here. Try ${[...okProps].join(", ")}`);
+      node = { k: "prop", obj: node, prop: pr.v };
+    }
+    return node;
+  }
+  function cmp() { const l = primary(); if (is("op")) { const op = next().v; return { k: "cmp", op, l, r: primary() }; } return l; }
+  function notE() { if (is("kw", "not")) { next(); return { k: "not", x: notE() }; } return cmp(); }
+  function andE() { let l = notE(); while (is("kw", "and")) { next(); l = { k: "and", l, r: notE() }; } return l; }
+  function expr() { let l = andE(); while (is("kw", "or")) { next(); l = { k: "or", l, r: andE() }; } return l; }
+
+  let cond = null;
+  if (is("kw", "if")) {
+    const ifTok = next();
+    cond = expr();
+    if (!is(":")) {
+      if (peek()) {
+        const condSrc = text.slice(ifTok.e, peek().s).trim();
+        throw new RuleError(`needs a colon after the condition: if ${condSrc}: ${text.slice(peek().s).trim()}`);
+      }
+      throw new RuleError("needs a colon and a spell after the condition, for example if ally_down(): last_rite(fallen_ally)");
+    }
+    next();
+  }
+  const sp = next();
+  if (!sp) throw new RuleError("needs a spell after the colon");
+  if (sp.t !== "id") throw new RuleError(`"${sp.v}" is not a spell name`);
+  if (!SPELLS[sp.v]) throw new RuleError(`there is no spell called ${sp.v}. Check the Spells panel for names`);
+  if (!unitDef.spells.includes(sp.v)) throw new RuleError(`${unitDef.name} doesn't know ${sp.v}`);
+  if (!is("(")) throw new RuleError(`a spell needs brackets, for example ${sp.v}(${SPELLS[sp.v].target === "none" ? "" : "nearest_enemy"})`);
+  next();
+  let arg = null;
+  if (!is(")")) arg = expr();
+  if (!is(")")) throw new RuleError(`${sp.v}( is missing its closing bracket`);
+  next();
+  if (peek()) throw new RuleError(`has extra text after the spell: ${text.slice(peek().s).trim()}`);
+  const def = SPELLS[sp.v];
+  if (def.target === "none" && arg) throw new RuleError(`${sp.v}() takes no target`);
+  if (def.target !== "none" && !arg) throw new RuleError(`${sp.v} needs a target, for example ${sp.v}(${def.target === "ally" ? "weakest_ally" : def.target === "fallen" ? "fallen_ally" : "nearest_enemy"})`);
+  return { cond, spell: sp.v, arg };
+}
+function terms(n) { return n.k === "and" || n.k === "or" ? terms(n.l) + terms(n.r) : n.k === "not" ? terms(n.x) : 1; }
+function parseBook(code, unitDef) {
+  const rules = [], errors = []; let cost = 0;
+  code.split("\n").forEach((text, i) => {
+    try {
+      const r = parseLine(text, unitDef);
+      if (r) { r.line = i + 1; rules.push(r); cost += 1 + (r.cond ? terms(r.cond) : 0); }
+    } catch (e) {
+      if (!(e instanceof RuleError)) throw e;
+      errors.push({ line: i + 1, msg: `Line ${i + 1} ${e.message.startsWith("needs") || e.message.startsWith("has") ? "" : ": "}${e.message}`.replace(" : ", ": ") });
+    }
+  });
+  return { rules, errors, cost };
+}
+
+/* ---------- Simulation ---------- */
+function simulate(heroBooks) {
+  const units = [
+    ...HEROES.map(d => mk(d, "hero", heroBooks[d.id].rules)),
+    ...FOES.map(d => mk(d, "foe", parseBook(d.code, d).rules)),
+  ];
+  function mk(def, side, rules) { return { id: def.id, name: def.name, side, max: def.hp, hp: def.hp, burn: 0, shield: 0, taunting: 0, charging: false, down: false, cd: {}, rules }; }
+  const byId = id => units.find(u => u.id === id);
+  const living = side => units.filter(u => u.side === side && !u.down);
+  const other = side => (side === "hero" ? "foe" : "hero");
+  const pct = u => Math.round((u.hp / u.max) * 100);
+  const snap = () => units.map(u => ({ id: u.id, hp: u.hp, max: u.max, burn: u.burn, shield: u.shield, taunting: u.taunting, charging: u.charging, down: u.down }));
+  const events = [];
+  const initial = snap();
+  let result = null;
+
+  function names(u, id) {
+    const allies = living(u.side), foes = living(other(u.side));
+    const weakest = list => list.reduce((a, b) => (b && (!a || pct(b) < pct(a)) ? b : a), null);
+    switch (id) {
+      case "self": return u;
+      case "weakest_ally": return weakest(allies);
+      case "fallen_ally": return units.find(x => x.side === u.side && x.down) || null;
+      case "nearest_enemy": return foes[0] || null;
+      case "weakest_enemy": return weakest(foes);
+      case "enemy": return { side: true, units: foes };
+    }
+    return null;
+  }
+  function prop(o, p) {
+    if (o == null) return null;
+    if (o.side === true) return p === "charging" ? o.units.some(x => x.charging) : p === "count" ? o.units.length : o.units.filter(x => x.burn > 0).length;
+    return { hp: o.hp, hp_pct: pct(o), burning: o.burn > 0, charging: o.charging, shielded: o.shield > 0, taunting: o.taunting > 0 }[p];
+  }
+  const truthy = v => !!v && v !== 0;
+  function ev(n, u, t, rec) {
+    let v;
+    switch (n.k) {
+      case "num": case "str": case "bool": return n.v;
+      case "name": v = names(u, n.id); break;
+      case "prop": v = prop(ev(n.obj, u, t, rec), n.prop); break;
+      case "call":
+        if (n.fn === "ally_down") v = units.some(x => x.side === u.side && x.down);
+        else if (n.fn === "allies_hurt") v = living(u.side).filter(x => x.hp < x.max).length;
+        else if (n.fn === "enemies_burning") v = living(other(u.side)).filter(x => x.burn > 0).length;
+        else if (n.fn === "ready") v = (u.cd[n.args[0].v] || 0) === 0;
+        else if (n.fn === "moment") v = t;
+        break;
+      case "not": v = !truthy(ev(n.x, u, t, rec)); break;
+      case "and": v = truthy(ev(n.l, u, t, rec)) && truthy(ev(n.r, u, t, rec)); break;
+      case "or": v = truthy(ev(n.l, u, t, rec)) || truthy(ev(n.r, u, t, rec)); break;
+      case "cmp": {
+        const a = ev(n.l, u, t, rec), b = ev(n.r, u, t, rec);
+        const num = x => (typeof x === "boolean" ? +x : x);
+        if (a == null || b == null) v = false;
+        else { const A = num(a), B = num(b); v = { "<": A < B, ">": A > B, "<=": A <= B, ">=": A >= B, "==": A === B, "!=": A !== B }[n.op]; }
+        break;
+      }
+    }
+    rec.set(n, v);
+    return v;
+  }
+  function fmt(v) {
+    if (v == null) return "none";
+    if (typeof v === "object") return v.side === true ? "enemies" : v.id;
+    if (typeof v === "number") return String(Math.round(v));
+    return String(v);
+  }
+  function explain(n, rec) {
+    if (n.k === "num") return String(n.v);
+    if (n.k === "str") return `"${n.v}"`;
+    if (n.k === "bool") return String(n.v);
+    if (!rec.has(n)) return "…";
+    if (n.k === "cmp") return `${explain(n.l, rec)} ${n.op} ${explain(n.r, rec)}`;
+    if (n.k === "and" || n.k === "or") return `${explain(n.l, rec)} ${n.k} ${explain(n.r, rec)}`;
+    if (n.k === "not") return `not ${explain(n.x, rec)}`;
+    return fmt(rec.get(n));
+  }
+  function damage(target, n, impacts) {
+    const absorbed = Math.min(target.shield, n); target.shield -= absorbed;
+    const d = n - absorbed; target.hp = Math.max(0, target.hp - d);
+    impacts.push({ id: target.id, text: d > 0 ? `${MINUS}${d}` : "blocked", tone: d > 0 ? "harm" : "guard" });
+    if (target.hp === 0) Object.assign(target, { down: true, burn: 0, shield: 0, taunting: 0, charging: false });
+    return d;
+  }
+  function healUnit(target, n, impacts) {
+    const before = target.hp; target.hp = Math.min(target.max, target.hp + n);
+    impacts.push({ id: target.id, text: `+${target.hp - before}`, tone: "mend" });
+    return target.hp - before;
+  }
+  function cast(u, r, t, impacts) {
+    const sp = SPELLS[r.spell];
+    let target = r.arg ? ev(r.arg, u, t, new Map()) : null;
+    const call = () => `${r.spell}(${sp.target === "none" ? "" : fmt(target && target.side === true ? null : target)})`;
+    const fizzle = reason => { impacts.push({ id: u.id, text: "fizzled", tone: "fizzle" }); return { ok: false, call: call(), reason }; };
+    if ((u.cd[r.spell] || 0) > 0) return fizzle(`${r.spell} is on cooldown for ${u.cd[r.spell]} more moment${u.cd[r.spell] > 1 ? "s" : ""}`);
+    if (target && target.side === true) return fizzle(`${r.spell} needs one unit as its target`);
+    if (sp.target === "fallen" && (!target || !target.down)) return fizzle(`${r.spell} needs a fallen ally, there is none`);
+    if (sp.target === "ally" && (!target || target.down || target.side !== u.side)) return fizzle(`${r.spell} needs a living ally as its target`);
+    if (sp.target === "enemy" && (!target || target.down || target.side === u.side)) return fizzle(`${r.spell} needs a living enemy as its target`);
+    if (r.spell === "fire_nova") { const n = living(other(u.side)).filter(x => x.burn > 0).length; if (n < 2) return fizzle(`fire_nova needs 2 burning enemies, there ${n === 1 ? "is" : "are"} ${n}`); }
+    if (r.spell === "smash" && !u.charging) return fizzle("smash needs a charge first");
+    let redirected = false;
+    if (sp.target === "enemy") {
+      const taunter = living(other(u.side)).find(x => x.taunting > 0);
+      if (taunter && taunter !== target) { target = taunter; redirected = true; }
+    }
+    let out = "", tone = sp.tone || "plain";
+    switch (r.spell) {
+      case "attack": case "club": case "smash":
+        out = `${MINUS}${damage(target, sp.power, impacts)}`; tone = "harm";
+        if (r.spell === "smash") u.charging = false; break;
+      case "firebolt": out = `${MINUS}${damage(target, sp.power, impacts)}, burning 3`; if (!target.down) target.burn = 3; break;
+      case "fire_nova": { const hit = living(other(u.side)); hit.forEach(x => damage(x, sp.power, impacts)); out = `${MINUS}${sp.power} to ${hit.length} enem${hit.length === 1 ? "y" : "ies"}`; break; }
+      case "heal": out = `+${healUnit(target, sp.power, impacts)}`; break;
+      case "mend": { const al = living(u.side); al.forEach(x => healUnit(x, sp.power, impacts)); out = `+${sp.power} to ${al.length} all${al.length === 1 ? "y" : "ies"}`; break; }
+      case "last_rite": Object.assign(target, { down: false, hp: sp.power }); impacts.push({ id: target.id, text: "rises", tone: "mend" }); out = `${target.id} rises with ${sp.power} HP`; break;
+      case "taunt": u.taunting = 2; impacts.push({ id: u.id, text: "taunt", tone: "guard" }); out = "taunting for 2 moments"; break;
+      case "shield": target.shield = sp.power; impacts.push({ id: target.id, text: "shield", tone: "guard" }); out = `shield ${sp.power} on ${target.id}`; break;
+      case "charge": u.charging = true; impacts.push({ id: u.id, text: "charging", tone: "harm" }); out = "charging"; tone = "harm"; break;
+    }
+    if (redirected) out += `, taunted onto ${target.id}`;
+    if (sp.cd) u.cd[r.spell] = sp.cd;
+    return { ok: true, call: call(), out, tone };
+  }
+  function act(u, t) {
+    const checks = [], impacts = [];
+    for (const r of u.rules) {
+      const c = { line: r.line };
+      if (r.cond) {
+        const rec = new Map(); const v = truthy(ev(r.cond, u, t, rec));
+        c.result = v; c.explain = explain(r.cond, rec); c.leaf = ["call", "name", "prop"].includes(r.cond.k);
+        if (!v) { c.state = "skipped"; checks.push(c); continue; }
+      }
+      const o = cast(u, r, t, impacts);
+      Object.assign(c, { state: o.ok ? "fired" : "fizzled", call: o.call, out: o.out, tone: o.tone, reason: o.reason });
+      checks.push(c);
+      return { t, kind: "turn", actor: u.id, checks, impacts, line: r.line, call: o.call, out: o.ok ? o.out : `fizzled: ${o.reason}`, tone: o.ok ? o.tone : "fizzle", fizzled: !o.ok };
+    }
+    return { t, kind: "turn", actor: u.id, checks, impacts, line: null, call: "no action", out: "no rule fired", tone: "plain" };
+  }
+  function end(t) {
+    if (!living("foe").length) return { kind: "win", t, text: `Victory at t${t}` };
+    if (!living("hero").length) return { kind: "loss", t, text: `Defeat at t${t}` };
+    return null;
+  }
+  for (let t = 1; t <= MAX_T && !result; t++) {
+    for (const u of units) {
+      if (u.down) continue;
+      const e = act(u, t); e.snap = snap(); events.push(e);
+      if ((result = end(t))) break;
+    }
+    if (result) break;
+    for (const u of units) {
+      if (u.down || u.burn <= 0) continue;
+      const impacts = []; const d = damage(u, BURN, impacts); u.burn = Math.max(0, u.burn - 1);
+      events.push({ t, kind: "tick", actor: u.id, checks: [], impacts, call: "burning", out: `${MINUS}${d}`, tone: "harm", snap: snap() });
+      if ((result = end(t))) break;
+    }
+    for (const u of units) { for (const k in u.cd) if (u.cd[k] > 0) u.cd[k]--; if (u.taunting > 0) u.taunting--; }
+  }
+  if (!result) result = { kind: "timeout", t: MAX_T, text: `Out of time after ${MAX_T} moments` };
+  const steps = [];
+  events.forEach((e, i) => { if (e.checks.length) e.checks.forEach((_, c) => steps.push({ e: i, c })); else steps.push({ e: i, c: -1 }); });
+  return { events, steps, result, initial };
+}
+
+/* ---------- State ---------- */
+const ALL = [...HEROES.map(d => ({ ...d, side: "hero" })), ...FOES.map(d => ({ ...d, side: "foe" }))];
+const unitDef = id => ALL.find(u => u.id === id);
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* storage unavailable: keep working without it */ } },
+};
+const state = {
+  phase: "setup", selected: "healer", view: "code", follow: "selected", tab: "book",
+  code: Object.fromEntries(HEROES.map(h => [h.id, store.get("sb-code-" + h.id) ?? h.code])),
+  books: {}, sim: null, step: 0, playing: null, startError: null,
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function reparse() { HEROES.forEach(h => { state.books[h.id] = parseBook(state.code[h.id], h); }); }
+
+function highlight(line, def) {
+  let toks; try { toks = tokenize(line); } catch (e) { return esc(line); }
+  let out = "", at = 0;
+  for (const tk of toks) {
+    out += esc(line.slice(at, tk.s));
+    const raw = esc(line.slice(tk.s, tk.e));
+    if (tk.t === "kw" && tk.v !== "true" && tk.v !== "false") out += `<span class="kw">${raw}</span>`;
+    else if (tk.t === "id" && SPELLS[tk.v] && SPELLS[tk.v].tone && def.spells.includes(tk.v)) out += `<span class="sp-${SPELLS[tk.v].tone}">${raw}</span>`;
+    else out += raw;
+    at = tk.e;
+  }
+  return out + esc(line.slice(at));
+}
+
+/* ---------- Rendering ---------- */
+function currentSnap() {
+  const { sim, step } = state;
+  if (!sim) return null;
+  const s = sim.steps[step], e = sim.events[s.e];
+  const final = s.c === -1 || s.c === e.checks.length - 1;
+  return { snap: final ? e.snap : s.e > 0 ? sim.events[s.e - 1].snap : sim.initial, final, s, e };
+}
+function focusUnit() {
+  if (state.phase !== "replay" || state.follow === "selected") return state.selected;
+  const { sim, step } = state;
+  for (let i = sim.steps[step].e; i >= 0; i--) if (sim.events[i].kind === "turn") return sim.events[i].actor;
+  return state.selected;
+}
+
+const narrow = window.matchMedia("(max-width: 1199px)"), tiny = window.matchMedia("(max-width: 520px)");
+function compactTiles() { return tiny.matches || (narrow.matches && state.phase === "replay" && state.tab !== "battle"); }
+narrow.addEventListener("change", () => render()); tiny.addEventListener("change", () => render());
+function renderField() {
+  const cur = currentSnap();
+  const snapOf = id => (cur ? cur.snap.find(x => x.id === id) : null);
+  const actor = cur && cur.e.kind === "turn" ? cur.e.actor : null;
+  const checkLine = cur && cur.e.kind === "turn" && cur.s.c >= 0 ? cur.e.checks[cur.s.c].line : null;
+  const tile = d => {
+    const sn = snapOf(d.id) || { hp: d.hp, max: d.hp, burn: 0, shield: 0, taunting: 0, charging: false, down: false };
+    const pctv = Math.round((sn.hp / sn.max) * 100);
+    const low = !sn.down && pctv < 30;
+    const badges = [
+      sn.down ? '<span class="sb-badge sb-badge--plain">Fallen</span>' : "",
+      sn.burn ? `<span class="sb-badge sb-badge--harm">Burning, ${sn.burn}</span>` : "",
+      sn.charging ? '<span class="sb-badge sb-badge--harm">Charging</span>' : "",
+      sn.shield ? `<span class="sb-badge sb-badge--guard">Shield ${sn.shield}</span>` : "",
+      sn.taunting ? '<span class="sb-badge sb-badge--guard">Taunting</span>' : "",
+    ].join("");
+    const impacts = cur && cur.final ? cur.e.impacts.filter(x => x.id === d.id) : [];
+    const impact = impacts.length ? `<span class="sb-unit__impact sb-unit__impact--${impacts[impacts.length - 1].tone}" aria-hidden="true">${esc(impacts[impacts.length - 1].text)}</span>` : "";
+    const acting = actor === d.id;
+    const sel = focusUnit() === d.id;
+    const compact = compactTiles();
+    return `<button type="button" class="sb-unit${compact ? " sb-unit--compact" : ""}${sel ? " sb-unit--selected" : ""}${sn.down ? " sb-unit--down" : ""}" data-unit="${d.id}" aria-pressed="${sel}" aria-label="${esc(d.name)}, ${sn.hp} of ${sn.max} HP${sn.down ? ", fallen" : ""}${acting ? ", acting now" : ""}">
+      <span class="sb-unit__sprite" style="--x:${d.sprite}" aria-hidden="true"></span>${impact}
+      <span class="sb-unit__info">
+        <span class="sb-unit__top"><span class="sb-unit__name">${esc(d.name)}</span>${acting ? `<span class="sb-tab">${checkLine ? "line " + checkLine : "acts"}</span>` : ""}</span>
+        <span class="sb-meter${low ? " sb-meter--low" : ""}" aria-hidden="true"><span class="sb-meter__track"><span class="sb-meter__fill" style="width:${pctv}%;display:block"></span></span><span class="sb-meter__value">${sn.hp} / ${sn.max}</span></span>
+        <span class="sb-unit__badges">${badges}</span>
+      </span></button>`;
+  };
+  $("side-hero").innerHTML = HEROES.map(tile).join("");
+  $("side-foe").innerHTML = FOES.map(tile).join("");
+}
+
+function renderLog() {
+  const log = $("log");
+  if (state.phase === "setup") {
+    log.innerHTML = state.startError
+      ? `<p class="sb-log__status sb-log__status--error" style="margin:0">The fight could not start. ${esc(state.startError)}</p>`
+      : '<p class="sb-log__status" style="margin:0">No fight yet. Press <b>Run fight</b> and every action will appear here, linked to its line.</p>';
+    return;
+  }
+  const { sim, step } = state; const cur = sim.steps[step];
+  let html = "";
+  for (let i = 0; i <= cur.e; i++) {
+    const e = sim.events[i], d = unitDef(e.actor), isCur = i === cur.e;
+    const done = !isCur || cur.c === -1 || cur.c === e.checks.length - 1;
+    const who = `<span class="sb-log__who">${esc(d.name)}</span>`;
+    const tcell = `<span class="sb-log__t">${isCur ? `<span class="sb-tab">t${e.t}</span>` : "t" + e.t}</span>`;
+    let what, out;
+    if (e.kind === "tick") { what = "burning"; out = `<span class="sb-log__out out-harm">${esc(e.out)}</span>`; }
+    else if (!done) { what = `<span class="rule">checking line ${e.checks[cur.c].line}</span>`; out = '<span class="sb-log__out"></span>'; }
+    else { what = `${esc(e.call)}${e.line ? ` <span class="rule">· line ${e.line}</span>` : ""}`; out = `<span class="sb-log__out out-${e.tone}">${esc(e.out)}</span>`; }
+    const cls = ["sb-log__entry", isCur ? "sb-log__entry--current" : "", e.kind === "tick" ? "sb-log__entry--tick" : "", d.side === "foe" ? "sb-log__entry--foe" : "", done && e.fizzled ? "sb-log__entry--fizzled" : ""].join(" ");
+    html += `<div class="${cls}">${tcell}${who}<span class="sb-log__what">${what}</span>${out}</div>`;
+  }
+  if (cur.e === sim.events.length - 1 && (cur.c === -1 || cur.c === sim.events[cur.e].checks.length - 1)) {
+    html += `<p class="sb-log__status" style="margin:0"><b>${esc(sim.result.text)}.</b> Step back through the fight to find the line to fix, then press Edit spellbooks.</p>`;
+  }
+  log.innerHTML = html;
+  const curRow = log.querySelector(".sb-log__entry--current");
+  if (curRow) log.scrollTop = Math.max(0, curRow.offsetTop - log.clientHeight + curRow.offsetHeight + 8);
+}
+
+function renderSpells() {
+  const id = focusUnit(), d = unitDef(id), editable = state.phase === "setup" && d.side === "hero" && state.view === "code";
+  $("spells-who").textContent = d.side === "foe" ? `${d.name} (enemy)` : d.name;
+  $("spells-hint").textContent = d.side === "foe" ? "Enemy spells, for reading their spellbook." : state.view === "sigils" ? "Switch the spellbook to Code to insert spells." : "Select a spell or condition to insert it into the spellbook at the cursor.";
+  const item = (code, desc, req, insert) => {
+    const inner = `<code>${esc(code)}</code><span class="desc">${esc(desc)}</span>${req ? `<span class="req">${esc(req)}</span>` : ""}`;
+    return editable ? `<button type="button" class="lib-item" data-insert="${esc(insert)}">${inner}<span class="ins">Insert ${esc(insert.trim())}</span></button>` : `<div class="lib-item">${inner}</div>`;
+  };
+  $("lib-spells").innerHTML = "<h3>Known spells</h3>" + d.spells.map(s => {
+    const sp = SPELLS[s], tgt = sp.target === "none" ? "" : sp.target === "ally" ? "weakest_ally" : sp.target === "fallen" ? "fallen_ally" : "nearest_enemy";
+    return item(`${s}(${sp.target === "none" ? "" : "target"})`, sp.desc + (sp.cd ? ` Cooldown ${sp.cd} moments.` : ""), sp.req, `${s}(${tgt})`);
+  }).join("");
+  const cdSpell = d.spells.find(s => SPELLS[s].cd) || d.spells[0];
+  $("lib-conds").innerHTML = "<h3>Conditions</h3>" + CONDITIONS.map(([c, desc]) => { const snippet = c === 'ready("spell")' ? `ready("${cdSpell}")` : c; return item(snippet, desc, "", snippet); }).join("");
+  $("lib-targets").innerHTML = "<h3>Targets</h3>" + TARGETS.map(([c, desc]) => item(c, desc, "", c)).join("");
+}
+
+function renderTabs() {
+  $("hero-tabs").innerHTML = HEROES.map(h => {
+    const bad = state.books[h.id].errors.length;
+    return `<button type="button" class="tab-btn" data-unit="${h.id}" aria-pressed="${focusUnit() === h.id}">${esc(h.name)}${bad ? ` <span class="err">(${bad} error${bad > 1 ? "s" : ""})</span>` : ""}</button>`;
+  }).join("");
+}
+
+function sigilRows(def, book) {
+  if (!book.rules.length) return '<p class="note">No rules yet. Switch to Code and insert a spell from the Spells panel.</p>';
+  const target = r => (r.arg ? (r.arg.k === "name" ? r.arg.id : "…") : "");
+  return `<div class="sigil-rows">${book.rules.map(r => {
+    const line = state.code[def.id].split("\n")[r.line - 1];
+    const condSrc = r.cond ? line.slice(line.indexOf("if") + 2, line.indexOf(":")).trim() : "";
+    const tone = SPELLS[r.spell].tone;
+    return `<div class="sigil-row"><span class="n">${r.line}</span>
+      ${r.cond ? `<span class="sb-sigil sb-sigil--when static"><span class="sb-sigil__kw">when</span> ${esc(condSrc)}</span>` : ""}
+      <span class="sb-sigil${tone ? " sb-sigil--" + tone : ""} static"><span class="sb-sigil__kw">cast</span> <b>${esc(r.spell)}</b></span>
+      ${r.arg ? `<span class="sb-sigil static"><span class="sb-sigil__kw">on</span> ${esc(target(r))}</span>` : ""}</div>`;
+  }).join("")}</div><p class="note">Sigils show the same rules as the code. Dragging sigils to edit comes in a later version; use Code to change rules for now.</p>`;
+}
+
+function renderBookSetup() {
+  const id = state.selected, d = unitDef(id);
+  if (d.side === "foe") {
+    const lines = d.code.split("\n");
+    $("book-body").innerHTML = `<div class="replay-head"><p class="who">${esc(d.name)}</p><p class="note">Enemy spellbook, read only. Enemies follow their rules the same way your heroes do.</p></div>
+      <div class="sb-book" role="list" aria-label="${esc(d.name)} spellbook">${lines.map((l, i) => `<div class="sb-rule" role="listitem"><span class="sb-rule__n">${i + 1}</span><span class="sb-rule__code">${highlight(l, d)}</span><span class="sb-rule__state"></span></div>`).join("")}</div>`;
+    return;
+  }
+  const book = state.books[id], over = book.cost - d.budget;
+  const lines = state.code[id].split("\n");
+  const bad = new Set(book.errors.map(e => e.line));
+  $("book-body").innerHTML = `<div class="sb-stack" style="padding:0">
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="Spellbook view">
+        <button type="button" data-view="code" aria-pressed="${state.view === "code"}">Code</button>
+        <button type="button" data-view="sigils" aria-pressed="${state.view === "sigils"}">Sigils</button>
+      </div>
+      <div class="sb-meter sb-meter--focus${over > 0 ? " sb-meter--over" : ""}" role="meter" aria-label="Focus used" aria-valuemin="0" aria-valuemax="${d.budget}" aria-valuenow="${book.cost}">
+        <span class="sb-meter__label">Focus</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:${Math.min(100, (book.cost / d.budget) * 100)}%"></div></div><span class="sb-meter__value">${book.cost} / ${d.budget}</span>
+      </div>
+    </div>
+    ${over > 0 ? `<p class="banner"><b>${over} focus over budget.</b> Each rule costs 1, plus 1 for every part of its condition. Remove a rule or simplify a condition.</p>` : ""}
+    ${state.view === "code" ? `
+      <label class="editor-label" for="code">${esc(d.name)}'s spellbook. Rules are checked top to bottom each moment; the first true one fires.</label>
+      <div class="editor"><div class="gutter" id="gutter" aria-hidden="true">${lines.map((_, i) => `<span class="${bad.has(i + 1) ? "bad" : ""}">${i + 1}</span>`).join("")}</div>
+      <textarea id="code" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" rows="${Math.max(8, lines.length + 2)}">${esc(state.code[id])}</textarea></div>
+      ${book.rules.length || book.errors.length ? "" : '<p class="note">No rules yet. Insert a spell from the Spells panel or type a rule, for example attack(nearest_enemy).</p>'}
+      <ul class="errors" id="errors">${book.errors.map(e => `<li>${esc(e.msg)}</li>`).join("")}</ul>
+      <div><button type="button" class="sb-btn sb-btn--ghost" id="reset-btn">Reset ${esc(d.name)}'s spellbook</button></div>`
+      : sigilRows(d, book)}
+  </div>`;
+  const ta = $("code");
+  if (ta) {
+    ta.addEventListener("input", onCodeInput);
+    ta.addEventListener("scroll", () => { $("gutter").scrollTop = ta.scrollTop; });
+  }
+}
+
+function renderBookReplay() {
+  const id = focusUnit(), d = unitDef(id), { sim, step } = state, cur = sim.steps[step], curEv = sim.events[cur.e], t = curEv.t;
+  const idx = sim.events.findIndex(e => e.t === t && e.kind === "turn" && e.actor === id);
+  const code = d.side === "hero" ? state.code[id] : d.code;
+  let shown = [], status = "", nowLine = null;
+  if (idx === -1) status = sim.events.slice(0, cur.e + 1).some(e => e.snap.find(x => x.id === id).down) ? `${d.name} has fallen. No rules run.` : `${d.name} does not act in moment ${t}.`;
+  else if (idx > cur.e) status = `Waiting: ${d.name} acts after ${unitDef(curEv.actor).name} in moment ${t}.`;
+  else {
+    const e = sim.events[idx];
+    shown = idx === cur.e ? e.checks.slice(0, cur.c + 1) : e.checks;
+    if (idx === cur.e && cur.c >= 0) nowLine = e.checks[cur.c].line;
+    if (!e.checks.length) status = `${d.name}'s spellbook is empty, so nothing happened.`;
+  }
+  const byLine = new Map(shown.map(c => [c.line, c]));
+  const rows = code.split("\n").map((l, i) => {
+    if (!l.trim()) return "";
+    const n = i + 1, c = byLine.get(n);
+    let cls = "sb-rule", word = "", trace = "";
+    if (c) {
+      const condPart = c.explain !== undefined ? `${c.leaf ? "" : `<span>${esc(c.explain)}</span>`}<span class="res ${c.result ? "res-true" : "res-false"}">${c.result ? "true" : "false"}</span>` : "";
+      if (c.state === "skipped") { cls += " sb-rule--skipped"; word = "false"; trace = condPart; }
+      else if (c.state === "fired") { cls += " sb-rule--fired"; word = "fired"; trace = `${condPart}<span class="out-${c.tone}">${esc(c.call)} ${esc(c.out)}</span>`; }
+      else { cls += " sb-rule--fizzled"; word = "fizzled"; trace = `${condPart}<span class="out-fizzle">${esc(c.reason)}</span>`; }
+    }
+    const num = n === nowLine || (c && c.state === "fired") ? `<span class="sb-tab">${n}</span>` : n;
+    return `<div class="${cls}" role="listitem"><span class="sb-rule__n">${num}</span><span class="sb-rule__code">${highlight(l, d)}</span><span class="sb-rule__state">${word}</span>${trace ? `<div class="trace">${trace}</div>` : ""}</div>`;
+  }).join("");
+  $("book-body").innerHTML = `<div class="replay-head"><p class="who">${esc(d.name)}${d.side === "foe" ? " (enemy)" : ""} · moment ${t}</p>${status ? `<p class="waiting">${esc(status)}</p>` : ""}</div>
+    <div class="sb-book" role="list" aria-label="${esc(d.name)} spellbook in moment ${t}">${rows}</div>`;
+}
+
+function renderTransport() {
+  const { sim, step } = state; const cur = sim.steps[step], e = sim.events[cur.e];
+  $("scrub").max = sim.steps.length - 1; $("scrub").value = step;
+  $("scrub-label").innerHTML = `Replay position: step <b>${step + 1}</b> of <b>${sim.steps.length}</b>, moment <b>${e.t}</b>`;
+  $("prev-btn").disabled = step === 0;
+  $("next-btn").disabled = step === sim.steps.length - 1;
+  $("play-btn").textContent = state.playing ? "Pause" : step === sim.steps.length - 1 ? "Replay from start" : "Play";
+  const atEnd = step === sim.steps.length - 1;
+  $("result").textContent = atEnd ? sim.result.text : "";
+  $("result").className = `result replay-only ${atEnd ? sim.result.kind : ""}`;
+}
+
+function renderRunBtn() {
+  const overs = HEROES.map(h => [h, state.books[h.id].cost - h.budget]).filter(([, o]) => o > 0);
+  const label = overs.length ? `Run fight: ${esc(overs[0][0].name)} is ${overs[0][1]} focus over budget` : "Run fight";
+  $("run-btn").disabled = $("run-btn-2").disabled = overs.length > 0;
+  $("run-btn").innerHTML = overs.length ? label : `${label} <kbd>Ctrl+Enter</kbd>`;
+  $("run-btn-2").innerHTML = label;
+}
+
+function render() {
+  document.body.dataset.phase = state.phase;
+  document.body.dataset.tab = state.tab;
+  $("phase-label").textContent = state.phase === "setup" ? "Setup" : "Replay";
+  document.querySelectorAll(".phone-tabs .tab-btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === state.tab)));
+  $("follow-selected").setAttribute("aria-pressed", String(state.follow === "selected"));
+  $("follow-action").setAttribute("aria-pressed", String(state.follow === "action"));
+  renderField(); renderTabs(); renderSpells(); renderLog(); renderRunBtn();
+  if (state.phase === "setup") renderBookSetup(); else { renderBookReplay(); renderTransport(); }
+}
+
+/* Partial refresh while typing, so the textarea keeps focus and cursor */
+let typingTimer = null;
+function onCodeInput(ev) {
+  const id = state.selected; state.code[id] = ev.target.value; store.set("sb-code-" + id, ev.target.value);
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(() => {
+    reparse(); state.startError = null;
+    const book = state.books[id], d = unitDef(id), bad = new Set(book.errors.map(e => e.line));
+    const lines = state.code[id].split("\n");
+    $("gutter").innerHTML = lines.map((_, i) => `<span class="${bad.has(i + 1) ? "bad" : ""}">${i + 1}</span>`).join("");
+    $("gutter").scrollTop = ev.target.scrollTop;
+    $("errors").innerHTML = book.errors.map(e => `<li>${esc(e.msg)}</li>`).join("");
+    const meter = document.querySelector(".toolbar .sb-meter");
+    meter.classList.toggle("sb-meter--over", book.cost > d.budget);
+    meter.setAttribute("aria-valuenow", book.cost);
+    meter.querySelector(".sb-meter__fill").style.width = Math.min(100, (book.cost / d.budget) * 100) + "%";
+    meter.querySelector(".sb-meter__value").textContent = `${book.cost} / ${d.budget}`;
+    renderTabs(); renderRunBtn(); renderLog();
+  }, 150);
+}
+
+/* ---------- Actions ---------- */
+function select(id) {
+  state.selected = id;
+  if (state.phase === "replay") state.follow = "selected";
+  render();
+}
+function run() {
+  reparse();
+  const broken = HEROES.find(h => state.books[h.id].errors.length);
+  if (broken) {
+    const e = state.books[broken.id].errors[0];
+    state.startError = `${broken.name}'s spellbook: ${e.msg}. Fix it and run again.`;
+    state.selected = broken.id; state.view = "code"; state.tab = "book";
+    render(); const ta = $("code"); if (ta) ta.focus(); return;
+  }
+  if (HEROES.some(h => state.books[h.id].cost > h.budget)) return;
+  state.startError = null;
+  state.sim = simulate(state.books);
+  state.phase = "replay"; state.step = 0; state.tab = "book";
+  render();
+  if (!reduceMotion) play();
+}
+function stop() { clearInterval(state.playing); state.playing = null; }
+function play() {
+  if (state.step === state.sim.steps.length - 1) state.step = 0;
+  stop();
+  state.playing = setInterval(() => {
+    if (state.step >= state.sim.steps.length - 1) { stop(); render(); return; }
+    state.step++; render();
+  }, 650);
+  render();
+}
+function go(step) { stop(); state.step = Math.max(0, Math.min(state.sim.steps.length - 1, step)); render(); }
+
+document.addEventListener("click", ev => {
+  const unitBtn = ev.target.closest("[data-unit]");
+  if (unitBtn) { select(unitBtn.dataset.unit); return; }
+  const tabBtn = ev.target.closest(".phone-tabs [data-tab]");
+  if (tabBtn) { state.tab = tabBtn.dataset.tab; render(); return; }
+  const viewBtn = ev.target.closest("[data-view]");
+  if (viewBtn) { state.view = viewBtn.dataset.view; render(); return; }
+  const ins = ev.target.closest("[data-insert]");
+  if (ins) {
+    const ta = $("code"); if (!ta) return;
+    const text = ins.dataset.insert;
+    ta.focus();
+    ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, "end");
+    ta.dispatchEvent(new Event("input"));
+    if (narrow.matches) { state.tab = "book"; render(); }
+    return;
+  }
+  if (ev.target.id === "reset-btn") {
+    const d = unitDef(state.selected); state.code[d.id] = d.code; store.set("sb-code-" + d.id, d.code); reparse(); render(); return;
+  }
+});
+$("run-btn").addEventListener("click", run);
+$("run-btn-2").addEventListener("click", run);
+$("edit-btn").addEventListener("click", () => { stop(); state.phase = "setup"; state.tab = "book"; render(); });
+$("prev-btn").addEventListener("click", () => go(state.step - 1));
+$("next-btn").addEventListener("click", () => go(state.step + 1));
+$("play-btn").addEventListener("click", () => (state.playing ? (stop(), render()) : play()));
+$("scrub").addEventListener("input", e => go(+e.target.value));
+$("follow-selected").addEventListener("click", () => { state.follow = "selected"; render(); });
+$("follow-action").addEventListener("click", () => { state.follow = "action"; render(); });
+document.addEventListener("keydown", e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && state.phase === "setup") { e.preventDefault(); run(); }
+  if (e.key === "Escape" && state.playing) { stop(); render(); }
+});
+const themeBtn = $("theme-btn");
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  themeBtn.textContent = t === "night" ? "Light theme" : "Dark theme";
+  store.set("sb-theme", t);
+}
+themeBtn.addEventListener("click", () => applyTheme(document.documentElement.dataset.theme === "night" ? "vellum" : "night"));
+
+applyTheme(store.get("sb-theme") === "vellum" ? "vellum" : "night");
+reparse();
+render();
+</script>
+</body>
+</html>

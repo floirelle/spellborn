@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../tokens.css">
+<link rel="stylesheet" href="../../components.css"><title>Hero card</title></head>
+<body>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--space-4);padding:var(--space-4)">
+  <article class="sb-hero sb-hero--selected">
+    <div class="sb-hero__head"><h3 class="sb-hero__name">Healer</h3><span class="sb-hero__class">Spellbook open</span></div>
+    <div class="sb-meter"><span class="sb-meter__label">HP</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:70%"></div></div><span class="sb-meter__value">84 / 120</span></div>
+    <div class="sb-meter sb-meter--focus"><span class="sb-meter__label">Focus</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:75%"></div></div><span class="sb-meter__value">9 / 12</span></div>
+    <div class="sb-hero__now">line 2: <b>heal</b>(tank)</div>
+  </article>
+  <article class="sb-hero">
+    <div class="sb-hero__head"><h3 class="sb-hero__name">Tank</h3><span class="sb-badge sb-badge--harm">Burning, 2 moments</span></div>
+    <div class="sb-meter sb-meter--low"><span class="sb-meter__label">HP</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:22%"></div></div><span class="sb-meter__value">31 / 140</span></div>
+    <div class="sb-meter sb-meter--focus"><span class="sb-meter__label">Focus</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:40%"></div></div><span class="sb-meter__value">4 / 10</span></div>
+    <div class="sb-hero__now">line 1: <b>taunt</b>()</div>
+  </article>
+  <article class="sb-hero sb-hero--down">
+    <div class="sb-hero__head"><h3 class="sb-hero__name">Mage</h3><span class="sb-hero__class">Fallen at t11</span></div>
+    <div class="sb-meter"><span class="sb-meter__label">HP</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:0%"></div></div><span class="sb-meter__value">0 / 96</span></div>
+    <div class="sb-meter sb-meter--focus"><span class="sb-meter__label">Focus</span><div class="sb-meter__track"><div class="sb-meter__fill" style="width:58%"></div></div><span class="sb-meter__value">7 / 12</span></div>
+    <div class="sb-hero__now">no action</div>
+  </article>
+</div>
+</body>
+</html>

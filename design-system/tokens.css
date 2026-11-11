@@ -1,0 +1,72 @@
+/* Spellborn tokens. Keep in sync with tokens.json (same names, same values).
+   Night is the default theme; set data-theme="vellum" on <html> for the light theme. */
+
+:root,
+[data-theme="night"] {
+  color-scheme: dark;
+  --ground: #0e1719;
+  --surface: #152225;
+  --surface-sunk: #0a1113;
+  --line: #2a3f43;
+  --line-strong: #5b7a7e;
+  --ink: #e8efe9;
+  --ink-muted: #93a7a2;
+  --gilt: #e3b558;
+  --gilt-soft: #2c2716;
+  --on-gilt: #1a1406;
+  --harm: #f28b54;
+  --mend: #5fd0a2;
+  --guard: #7fb2f5;
+  --fizzle: #938fa3;
+  --keyword: var(--ink-muted);
+  --shadow-float: 0 8px 24px #000000b3;
+  --focus-ring: 0 0 0 2px #0e1719, 0 0 0 4px #e3b558;
+}
+
+[data-theme="vellum"] {
+  color-scheme: light;
+  --ground: #eef2ef;
+  --surface: #f8faf8;
+  --surface-sunk: #e2e8e4;
+  --line: #c3cfca;
+  --line-strong: #6f817b;
+  --ink: #13201f;
+  --ink-muted: #4d625e;
+  --gilt: #8a5f0a;
+  --gilt-soft: #f4e6c4;
+  --on-gilt: #ffffff;
+  --harm: #b2440f;
+  --mend: #17694a;
+  --guard: #2a5fae;
+  --fizzle: #6a6578;
+  --keyword: var(--ink-muted);
+  --shadow-float: 0 4px 8px #13201f14, 0 12px 28px -4px #13201f29;
+  --focus-ring: 0 0 0 2px #eef2ef, 0 0 0 4px #8a5f0a;
+}
+
+:root {
+  --font-display: Grenze, "Iowan Old Style", Georgia, serif;
+  --font-text: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-code: "Atkinson Hyperlegible Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 2px;
+  --radius-md: 6px;
+  --radius-full: 9999px;
+}
+
+/* Type styles, one class per style in tokens.json */
+.sb-title   { font-family: var(--font-display); font-size: 40px; line-height: 44px; font-weight: 700; letter-spacing: -0.01em; }
+.sb-heading { font-family: var(--font-display); font-size: 24px; line-height: 28px; font-weight: 600; }
+.sb-impact  { font-family: var(--font-display); font-size: 28px; line-height: 28px; font-weight: 700; }
+.sb-body    { font-family: var(--font-text); font-size: 15px; line-height: 22px; font-weight: 400; }
+.sb-small   { font-family: var(--font-text); font-size: 13px; line-height: 18px; font-weight: 400; }
+.sb-label   { font-family: var(--font-text); font-size: 11px; line-height: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.sb-code    { font-family: var(--font-code); font-size: 14px; line-height: 24px; font-weight: 400; }
+.sb-code-sm { font-family: var(--font-code); font-size: 12px; line-height: 18px; font-weight: 400; }
