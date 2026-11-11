@@ -11,7 +11,20 @@ Decisions agreed so far. Numbers marked *sample* are placeholders until balancin
 ### Formation
 - **The party uses a 2×2 grid:** a front row and a back row, 2 heroes each (4 at most, matching the 4 party slots).
 - **Enemies also stand in a front and back row, but have no size limit.** An encounter can field any number of enemies per row.
-- **Reach:** melee can only reach the back row once the front row is empty; ranged attacks and spells reach either row.
+- **Reach:** single-target attacks and spells only reach the **front row**. The back row can be hit by:
+  - **row-wide effects** (*examples:* `fire_nova`, `volley`), which hit their whole row;
+  - **the Ranger's weaker skills**, which can target any unit at reduced damage (its strong skills follow the normal rule);
+  - anything, once the enemy front row is empty.
+- **Taunt binds everyone,** the Ranger included.
+
+### Targeting
+- **Enemies target through their own spellbooks**, using the same words as heroes, from their side: for an enemy, `weakest_enemy` means the player's weakest hero. There is no hidden aggro or threat system; every target choice comes from a readable rule.
+- **Enemy spellbooks show a plain-language note** under each target word (*example:* "weakest_enemy: your weakest hero").
+- **Targets are picked when the unit acts**, not at the start of the moment, so a unit that acts later in the AGI order chooses from what is left.
+- **Reach rules apply to both sides.** Enemy single-target hits only reach the party's front row unless the enemy has row-wide or any-target skills.
+- **Taunt overrides** every enemy single-target attack, including charged attacks, pulling it onto the taunting hero. Row-wide attacks still hit their whole row.
+- **Ties** (*example:* two heroes at the same HP %) go by formation order: front-left, front-right, back-left, back-right.
+- **Charged attacks lock a formation spot, not a hero.** When an enemy starts charging, the targeted spot is shown (readable as `enemy.charge_target`). When the hit lands it strikes whoever stands in that spot. If the spot is empty, the charge keeps going down the same column and hits the unit in the back row behind it. If the whole column is empty, it fizzles. Swapping heroes around can't make the attack disappear; taunt is the intended counter.
 - **An empty front row promotes the back row**, so melee always has a target.
 - **Moving:** `move_front()` and `move_back()` cost the moment. A hero moving into a full party row fizzles, and the replay says why.
 - **Row trade-offs:** the front row deals and takes more damage; the back row is safer, but melee from it is weak. **Taunt only works from the front row.**
@@ -37,7 +50,7 @@ Spellbooks can read stats and resources: `self.mana`, `self.hp_pct`, `nearest_en
 
 | Class | Leans on | Role |
 | --- | --- | --- |
-| Healer | INT, WIS | Heals, group mend, revives with last_rite. |
+| Healer | INT, WIS | Heals, resistance buffs, cleansing, and some damage with holy_flame. |
 | Tank | VIT, STR | Taunts and shields; soaks hits. |
 | Ranger | AGI, STR | Acts early, hits the back row, interrupts charging enemies. |
 | Mage | INT, WIS | Sets enemies burning, then fire_nova. |
@@ -47,7 +60,63 @@ Spellbooks can read stats and resources: `self.mana`, `self.hp_pct`, `nearest_en
 - **Kit size:** every class has a free, weak **basic attack plus 4 spells** in the first version, unlocked at character levels **1, 3, 7 and 12**.
 - **Mana and cooldowns.** Each spell costs mana and has a cooldown in moments.
 - `ready("spell")` is true when the spell is off cooldown **and** the caster has enough mana. (Proposed; confirm when the spell kits are designed.)
-- Casting without enough mana, off cooldown, or without a built-in requirement **fizzles**: the hero loses the moment and the replay says why ("mend needs 6 mana, you have 4").
+- **Fizzle:** an action that fails because its conditions weren't met when it was used. It does nothing, the caster loses the moment, and the replay names the line and the reason ("line 4 fizzled: fire_nova needs 2 burning enemies, there was 1"). The same applies to heroes and enemies. Causes:
+  - the spell is on cooldown;
+  - not enough mana ("bless needs 5 mana, you have 3");
+  - a built-in requirement isn't met;
+  - the target is invalid or out of reach;
+  - moving into a full row.
+
+## Class kits (first version, levels 1 to 20)
+
+All numbers are *sample* values. Basic attacks are free (no mana, no cooldown) and weak. Single-target attacks follow the reach rule (front row only) unless noted.
+
+**Class traits** (one passive per class, giving each a way to survive alone at level 1) are *proposed, not yet agreed*: Healer *Lantern light* (heals on a target below 30% HP restore 50% more), Tank *Hold the line* (Block fills twice as fast in the front row), Ranger *Quick draw* (acts first in the first moment of a fight), Mage *Kindling* (burning enemies deal 15% less damage).
+
+### Healer (INT, WIS)
+| Lv | Spell | Mana | Cooldown | Type | Effect | Requirement |
+| --- | --- | --- | --- | --- | --- | --- |
+| – | `smite(enemy)` | 0 | 0 | Magic | Weak damage | – |
+| 1 | `heal(ally)` | 4 | 0 | – | Restore 12 HP + 2 per INT; can target self | – |
+| 3 | `bless(ally)` | 5 | 3 | – | +4 + 1 per 2 INT physical and magic resistance for 3 moments | Target isn't already blessed |
+| 7 | `holy_flame(enemy)` | 5 | 2 | Magic | Damage scaling with INT, and heals the weakest ally for half the damage dealt | – |
+| 12 | `purify(ally)` | 5 | 2 | – | Remove burning, curse and other statuses | Target has a status |
+
+Later (after level 20): `mend()` (group heal) and raising a fallen ally.
+
+### Tank (VIT, STR)
+| Lv | Spell | Mana | Cooldown | Type | Effect | Requirement |
+| --- | --- | --- | --- | --- | --- | --- |
+| – | `bash(enemy)` | 0 | 0 | Physical | Weak melee hit | – |
+| 1 | `guard()` | 3 | 2 | – | +50% Block meter (max 100%); at 100% the next hit taken is halved | – |
+| 3 | `taunt()` | 4 | 3 | – | Enemies must target you for 2 moments | You are in the front row |
+| 7 | `barrier(ally)` | 5 | 3 | – | Absorb 10 + 1 per VIT damage of any type on one ally | – |
+| 12 | `cleave()` | 6 | 3 | Physical | Damage scaling with STR to the whole enemy front row | You are in the front row |
+
+### Ranger (AGI, STR)
+| Lv | Spell | Mana | Cooldown | Type | Effect | Requirement |
+| --- | --- | --- | --- | --- | --- | --- |
+| – | `shoot(enemy)` | 0 | 0 | Physical | Weak hit; **reaches any unit** | – |
+| 1 | `pin(enemy)` | 3 | 3 | Physical | Weak hit; cancels the target's charge; **reaches any unit** | – |
+| 3 | `aimed_shot(enemy)` | 5 | 2 | Physical | Heavy hit scaling with STR and AGI, with bonus Penetration; front row only | – |
+| 7 | `volley()` | 6 | 3 | Physical | Damage to the whole enemy back row | Enemy back row is not empty |
+| 12 | `mark(enemy)` | 4 | 4 | – | Target takes 25% more damage from everyone for 3 moments; **reaches any unit** | Target is not already marked |
+
+### Mage (INT, WIS)
+| Lv | Spell | Mana | Cooldown | Type | Effect | Requirement |
+| --- | --- | --- | --- | --- | --- | --- |
+| – | `spark(enemy)` | 0 | 0 | Magic | Weak damage | – |
+| 1 | `firebolt(enemy)` | 4 | 0 | Magic | Damage scaling with INT, plus burning for 3 moments | – |
+| 3 | `arcane_surge()` | 6 | 5 | – | +20% to the Mage's own damage for 3 moments | Not already surging |
+| 7 | `frost_ward()` | 5 | 4 | – | Absorb 8 + 1 per INT damage on yourself | – |
+| 12 | `immolate(enemy)` | 6 | 4 | Magic | Deal the target's remaining burn damage at once, doubled; ends the burn | Target is burning |
+
+- **Balance note (tune later):** at +20% for 3 moments, `arcane_surge` adds about 0.6 of a cast but costs a whole moment, so on its own it usually loses damage. Kept as agreed; revisit when numbers are tested (options considered: also boosting burn ticks, or making it instant).
+- **The Mage stays a front-row specialist;** the back row is the Ranger's job, or anyone's once the front row falls.
+- Later (after level 20): an area spell such as `fire_nova`, redesigned so it neither ignores reach nor scales with uncapped enemy counts.
+
+### Set bonuses can reshape spells
+Specialised versions of spells come from set bonuses rather than extra spells (*example:* Bulwark 4 pieces: `bless` gives double physical resistance and no magic resistance).
 
 ## Focus (code budget)
 
@@ -67,7 +136,7 @@ Spellbooks can read stats and resources: `self.mana`, `self.hp_pct`, `nearest_en
 ## Rarity and rolled stats
 
 - **Rarities:** common, uncommon, rare, epic, legendary, mythic. **Mythic is planned but not in the first version:** the first draft has no mythic items. The design below records the intended plan so it can be added later.
-- **Main stat:** every piece has a main stat **fixed by its slot**, with a value range rolled when the piece is obtained (*sample:* 1 to 5 STR). Which stat each slot gets is still open; rings and artifacts should offer more variety than armour. There is no bad-luck protection.
+- **Main stat:** every piece has a main stat **fixed by its slot**, with a value range rolled when the piece is obtained (*sample:* 1 to 5 STR). Which stat each slot gets is still open; rings and artifacts should offer more variety than the other slots. There is no bad-luck protection.
 - **Sub-bonus pool** (all deterministic, all readable from spellbooks):
 
 | Group | Sub-bonus | Effect |
@@ -76,13 +145,13 @@ Spellbooks can read stats and resources: `self.mana`, `self.hp_pct`, `nearest_en
 | Resource | Max mana, Mana regen | Bigger pool, faster refill. |
 | Meters | **Precision** | Each hit fills a crit meter; at 100% the next hit crits and the meter resets (25% = every 4th hit). Readable as `self.crit_ready`. |
 | Meters | **Block** | Each hit taken fills a block meter; at 100% the next hit taken is halved. Readable as `self.block_ready`. Replaces dodge. |
-| Defence | **Armour** | Reduces physical damage. |
-| Defence | **Resistance** | Reduces spell damage. |
-| Offence | **Penetration** | Ignores part of the target's armour or resistance. |
+| Defence | **Physical resistance** | Reduces physical damage. Readable as `phys_res`. |
+| Defence | **Magic resistance** | Reduces magic damage. Readable as `magic_res`. |
+| Offence | **Penetration** | Ignores part of the target's physical or magic resistance. |
 | Sustain | **Leech** | Heals the attacker for part of the damage dealt. |
 | Tempo | **Haste** | Shortens cooldowns. |
 
-- **Two damage types:** physical and spell, so Armour, Resistance and Penetration make the choice of attacker and target matter.
+- **Two damage types: physical and magic.** Physical resistance, magic resistance and Penetration make the choice of attacker and target matter (*example:* `if nearest_enemy.phys_res > 10: firebolt(nearest_enemy)`).
 - **Build-defining states live only in set bonuses**, never as rolled sub-bonuses, so they stay deliberate and never stack across pieces (*examples:* Momentum, a bonus each moment the same rule fires again; Adaptation, a bonus when a different rule fires than last moment; Affliction, stronger statuses; Last stand, more damage below 30% HP).
 - **Sub-bonuses** are added by rarity and also rolled:
 
@@ -168,7 +237,7 @@ Not in the first version. Draft plan:
 
 ## Still open
 
-- Each class's spell kit: names, mana cost, cooldown, stat scaling, built-in requirements.
+- Mage kit review, class traits, and exact spell numbers.
 - Base stats per class, stat points per level, and the formulas (damage from STR, HP from VIT, and so on).
 - Mana numbers: pool size and regen per point of WIS.
 - Main stat for each slot; the stat variety on rings and artifacts.
