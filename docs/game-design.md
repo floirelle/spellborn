@@ -71,7 +71,7 @@ Spellbooks can read stats and resources: `self.mana`, `self.hp_pct`, `nearest_en
 
 All numbers are *sample* values. Basic attacks are free (no mana, no cooldown) and weak. Single-target attacks follow the reach rule (front row only) unless noted.
 
-**Class traits** (one passive per class, giving each a way to survive alone at level 1) are *proposed, not yet agreed*: Healer *Lantern light* (heals on a target below 30% HP restore 50% more), Tank *Hold the line* (Block fills twice as fast in the front row), Ranger *Quick draw* (acts first in the first moment of a fight), Mage *Kindling* (burning enemies deal 15% less damage).
+**Class traits:** each class has one passive, giving it a way to survive alone at level 1: Healer *Lantern light* (heals on a target below 30% HP restore 50% more), Tank *Hold the line* (Block fills twice as fast in the front row), Ranger *Quick draw* (acts first in the first moment of a fight), Mage *Kindling* (burning enemies deal 15% less damage).
 
 ### Healer (INT, WIS)
 | Lv | Spell | Mana | Cooldown | Type | Effect | Requirement |
@@ -237,7 +237,7 @@ Not in the first version. Draft plan:
 
 ## Still open
 
-- Mage kit review, class traits, and exact spell numbers.
+- Exact spell numbers and balance.
 - Base stats per class, stat points per level, and the formulas (damage from STR, HP from VIT, and so on).
 - Mana numbers: pool size and regen per point of WIS.
 - Main stat for each slot; the stat variety on rings and artifacts.
